@@ -1,0 +1,61 @@
+import sys
+from parse import parse_file, parse_folder
+from store import init_db, store_chunks, count_chunks
+from search import search
+
+def ingest(path):
+    print("=== INGESTION ===")
+    init_db(overwrite=True)
+    
+    import os
+    if os.path.isdir(path):
+        chunks = parse_folder(path)
+    else:
+        chunks = parse_file(path)
+    
+    if chunks:
+        store_chunks(chunks)
+        print(f"\n✓ ingestion complete. {count_chunks()} chunks in database")
+    else:
+        print("no chunks found")
+
+def query(text):
+    print("=== QUERY ===")
+    results = search(text, top_k=3)
+    return results
+
+def interactive():
+    print("=== EdgeMind ===")
+    print("local semantic search — type 'quit' to exit\n")
+    
+    while True:
+        q = input("query: ").strip()
+        if q.lower() == 'quit':
+            break
+        if q:
+            query(q)
+            print()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("usage:")
+        print("  python run.py ingest <file_or_folder>")
+        print("  python run.py query <text>")
+        print("  python run.py interactive")
+        sys.exit(1)
+    
+    command = sys.argv[1]
+    
+    if command == "ingest":
+        path = sys.argv[2] if len(sys.argv) > 2 else "data/docs"
+        ingest(path)
+    
+    elif command == "query":
+        text = " ".join(sys.argv[2:])
+        query(text)
+    
+    elif command == "interactive":
+        interactive()
+    
+    else:
+        print(f"unknown command: {command}")

@@ -1,0 +1,10 @@
+robots are machines that can perform tasks automatically.
+they are used in manufacturing, healthcare, and exploration.
+robot motors require precise torque control for smooth operation.
+calibration is essential for maintaining robot arm accuracy.
+sensors provide feedback to the robot control system.
+the control system processes sensor data and sends commands to motors.
+battery life is a critical factor in mobile robot design.
+robot joints must be lubricated regularly to prevent wear.
+computer vision allows robots to perceive their environment.
+machine learning enables robots to improve their performance over time.
