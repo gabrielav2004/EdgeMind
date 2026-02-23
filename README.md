@@ -1,109 +1,104 @@
 # EdgeMind
 
-A lightweight local semantic knowledge system for edge devices and robotics. No cloud, no vector database, no heavy dependencies at runtime.
+A lightweight semantic retrieval and response system for edge devices and robotics. No cloud, no vector database, no heavy runtime dependencies.
 
 ## The Problem
 
-Running LLMs via hosted APIs introduces 100–500ms latency — unacceptable for real-time robotics and edge applications. EdgeMind brings semantic search and knowledge retrieval entirely local, using binary embeddings stored in a flat binary file, searchable via fast hamming distance operations.
+Semantic search and local inference typically require vector databases, float32 embeddings, and cloud-hosted models — too heavy for edge hardware. EdgeMind replaces all of that with binary embeddings in a flat binary file and a locally running quantized model.
 
 ## How It Works
 
-**Ingestion (runs once, on any machine):**
+**Ingestion (runs once):**
 ```
-documents → parse → float embeddings → binary quantization → flat binary file
-```
-
-**Runtime (on edge device):**
-```
-query → binary embedding → hamming distance search → retrieved chunks → response
+documents → chunk → embed → binary quantize → flat binary file
 ```
 
-The heavy lifting happens at ingestion time. At runtime, retrieval is pure bit operations — extremely fast, runs on anything.
-
-## Architecture
-
+**Retrieval + Response (runs on edge):**
 ```
-EdgeMind/
-  parse.py       # ingest txt, pdf, json files into chunks
-  store.py       # embed, quantize, and write to flat binary database
-  search.py      # hamming distance retrieval engine
-  run.py         # unified CLI interface
-  quantize.py    # binary embedding quality verification
-  data/
-    knowledge.bin  # flat binary database (bit vectors + raw text)
-    knowledge.idx  # byte offset index
-    docs/          # put your documents here
+query → binary embed → hamming distance search → relevant chunks → local model → answer
 ```
+
+The embedding model runs at ingestion time on any capable machine. At retrieval time, search is pure bit operations. The response model runs fully local via llama.cpp — no internet required.
 
 ## Why Binary Embeddings
 
-Traditional vector databases store float32 embeddings and use approximate nearest neighbor algorithms. This is expensive in memory and compute.
+A 384-dimensional float32 embedding is 1536 bytes. Binary quantization converts each dimension to a single bit based on sign — the same embedding becomes 48 bytes. Retrieval uses hamming distance instead of cosine similarity, which is a native CPU operation requiring no floating point math.
 
-Binary embeddings convert each float32 dimension to a single bit based on sign. A 384-dimensional embedding becomes 48 bytes. Retrieval becomes XOR + popcount — the fastest possible operation on any CPU.
+Results from testing:
+- 32x storage reduction vs float32
+- 100% top-1 retrieval accuracy preserved on domain-specific corpora
+- Sub-millisecond search at thousands of chunks
+- No vector database required
 
-Results: 32x storage reduction, near-zero retrieval latency, ~100% top-1 accuracy preserved vs float embeddings.
+## Project Structure
+
+```
+EdgeMind/
+  parse.py       # ingest txt, pdf, json into chunks
+  store.py       # embed, quantize, write to binary database
+  search.py      # hamming distance retrieval
+  respond.py     # local response generation via llama.cpp
+  run.py         # unified CLI
+  quantize.py    # verify binary embedding quality
+  data/
+    knowledge.bin  # flat binary database
+    knowledge.idx  # byte offset index
+    docs/          # place documents here
+  models/
+    tinyllama.gguf # local quantized model
+```
 
 ## Installation
 
 ```bash
-pip install sentence-transformers pypdf numpy scikit-learn
+pip install sentence-transformers pypdf numpy scikit-learn huggingface_hub
+```
+
+Install llama-cpp-python:
+```bash
+pip install llama-cpp-python
+```
+
+If that fails on Windows, use the prebuilt wheel:
+```bash
+pip install llama-cpp-python --prefer-binary --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+```
+
+Download the local model:
+```bash
+# Windows PowerShell
+Invoke-WebRequest -Uri "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf" -OutFile "models\tinyllama.gguf"
+
+# or via Python
+python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF', filename='tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf', local_dir='models')"
 ```
 
 ## Usage
 
-**Ingest documents:**
 ```bash
+# ingest documents
 python run.py ingest data/docs
-```
 
-**Query:**
-```bash
+# single query
 python run.py query "how do robot motors work"
-```
 
-**Interactive mode:**
-```bash
+# interactive mode (keeps model resident, faster responses)
 python run.py interactive
-```
-
-## Example Output
-
-```
-=== QUERY ===
-query: 'what torque does a robot motor need'
-searching...
-search completed in 20ms
-
---- top 3 results ---
-1. score: 0.828 | distance: 66 bits
-   'robot motors require precise torque control for smooth operation'
-
-2. score: 0.703 | distance: 114 bits
-   'motor needs strong rotational force for movement'
-
-3. score: 0.607 | distance: 151 bits
-   'robot arm joint needs calibration every 6 months'
 ```
 
 ## Database Format
 
-Each entry in `knowledge.bin`:
+`knowledge.bin` — one entry per chunk:
 ```
-[48 bytes binary vector][2 bytes chunk length][raw utf-8 chunk bytes]
+[48 bytes binary vector][2 bytes chunk length][raw utf-8 bytes]
 ```
 
-Each entry in `knowledge.idx`:
+`knowledge.idx` — one entry per chunk:
 ```
 [8 bytes uint64 offset into knowledge.bin]
 ```
 
-No third-party database. Two files. Reads and writes with Python's built-in `struct` module.
-
-## Supported File Types
-
-- `.txt` — plain text
-- `.pdf` — via pypdf
-- `.json` — recursively flattened to text
+No third-party database. Two flat files. Read and written with Python's built-in `struct` module.
 
 ## Performance
 
@@ -113,7 +108,14 @@ No third-party database. Two files. Reads and writes with Python's built-in `str
 | Search latency (1k chunks) | < 5ms |
 | Search latency (100k chunks) | < 50ms |
 | Embedding model size | 22MB |
-| RAM at runtime | < 200MB |
+| Response model size | 670MB (Q4) |
+| RAM at runtime | < 1.5GB |
+
+## Supported Input Formats
+
+- `.txt` — plain text
+- `.pdf` — via pypdf
+- `.json` — recursively flattened to text
 
 ## Configuration
 
@@ -123,21 +125,32 @@ CHUNK_SIZE = 200    # characters per chunk
 CHUNK_OVERLAP = 30  # overlap between chunks
 ```
 
+In `respond.py`:
+```python
+MODEL_PATH = "models/tinyllama.gguf"
+n_threads = 4       # cpu threads
+n_ctx = 2048        # context window
+```
+
+## Model Options
+
+| Model | Size | Quality | RAM needed |
+|-------|------|---------|------------|
+| TinyLlama Q4_K_M | 670MB | good | 2GB+ |
+| TinyLlama Q2_K | 400MB | decent | 1.5GB+ |
+| Qwen2-0.5B Q4 | 350MB | lighter | 1GB+ |
+| SmolLM-135M Q4 | 80MB | minimal | 512MB+ |
+
+## Design Principle
+
+Everything heavy runs at ingestion time on a capable machine. Everything that runs on the edge device is minimal. The knowledge base is two files. Retrieval is arithmetic. The model is local.
+
 ## Roadmap
 
-- respond.py — byte-level response generation via ByT5-small
-- C runtime for hamming search — sub-millisecond at any scale
-- Single binary deployment — one executable, no Python required
-- Raspberry Pi 4 target — full system under 500MB RAM
-
-## Design Philosophy
-
-EdgeMind is designed around one constraint: everything that can be heavy runs at ingestion time on a capable machine. Everything that runs on the edge device must be minimal. The knowledge base is a file. Retrieval is arithmetic. The model is small.
-
-No vector database. No cloud API. No Docker. Just files and fast math.
-
-## Research Context
-
-This project explores binary embedding quantization as a replacement for vector databases in resource-constrained environments. The core finding: binary embeddings preserve top-1 retrieval accuracy at 100% in domain-specific corpora while reducing storage by 32x and enabling retrieval via native CPU bit operations.
-
-Target environments: Raspberry Pi, Jetson Nano, industrial edge controllers, mobile robots.
+- [x] Binary embedding pipeline
+- [x] Flat binary database
+- [x] Hamming distance retrieval
+- [x] Local response generation via llama.cpp
+- [ ] C implementation of hamming search
+- [ ] Single binary deployment, no Python dependency
+- [ ] Raspberry Pi 4 validated deployment
