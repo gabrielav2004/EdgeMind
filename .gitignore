@@ -60,3 +60,19 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# GGUF Models
+
+./models/
+models/
+*models/
+*.gguf
+
+# Generated KB Binary Files:
+
+*.bin 
+*.idx
+knowledge.bin
+knowledge.idx
+data/knowledge.bin
+data/knowledge.idx

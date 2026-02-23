@@ -1,13 +1,14 @@
 import sys
+import os
 from parse import parse_file, parse_folder
 from store import init_db, store_chunks, count_chunks
 from search import search
+from respond import respond
 
 def ingest(path):
     print("=== INGESTION ===")
     init_db(overwrite=True)
     
-    import os
     if os.path.isdir(path):
         chunks = parse_folder(path)
     else:
@@ -22,19 +23,28 @@ def ingest(path):
 def query(text):
     print("=== QUERY ===")
     results = search(text, top_k=3)
-    return results
+    chunks = [r['chunk'] for r in results]
+    
+    print("\n=== RESPONSE ===")
+    answer = respond(text, chunks)
+    print(f"\n{answer}")
+    return answer
 
 def interactive():
     print("=== EdgeMind ===")
-    print("local semantic search — type 'quit' to exit\n")
+    print("local semantic knowledge system")
+    print("type 'quit' to exit\n")
+    
+    # preload model so first query is fast
+    from respond import load_model
+    load_model()
     
     while True:
-        q = input("query: ").strip()
+        q = input("\nquery: ").strip()
         if q.lower() == 'quit':
             break
         if q:
             query(q)
-            print()
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
