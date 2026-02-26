@@ -104,22 +104,47 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
 
     return chunks
 
+def clean_formatter_output(text, prompt):
+    # strip entire prompt if echoed back
+    text = text.replace(prompt, '').strip()
+
+    # strip common leftover artifacts
+    text = re.sub(r'(?i)^output the reformatted text now:\s*', '', text).strip()
+    text = re.sub(r'(?i)^---end document---\s*', '', text).strip()
+    text = re.sub(r'(?i)^---begin document---\s*', '', text).strip()
+    text = re.sub(r'(?i)^text to rewrite:.*?\n', '', text).strip()
+    text = re.sub(r'(?i)^here is the rewritten.*?\n', '', text).strip()
+    text = re.sub(r'(?i)^rewritten.*?\n', '', text).strip()
+
+    # clean up extra blank lines
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    return text.strip()
+
+
 def format_section(text):
     """
     Reformat a section using configured provider (local or cloud).
     """
     from config import MODE
 
-    format_prompt = """Rewrite the following text into clean structured paragraphs.
-Rules:
-- Each paragraph must cover exactly one topic or fact
-- Each paragraph must be a complete self contained sentence or group of sentences
-- Keep all facts, names, numbers exactly as they appear
-- Remove broken sentences, formatting artifacts, redundant whitespace
-- Do not add, infer, or remove any information
+    format_prompt = """ <START_OF_PROMPT>
+    You are a document formatter. Your output must contain ONLY the reformatted text, nothing else.
 
-Text to rewrite:
-""" + text
+STRICT RULES:
+- Output the reformatted paragraphs ONLY
+- NO rules, NO labels, NO headers, NO footers
+- NO "Paragraph 1:", NO "Rule:", NO "Text:", NO "Here is..."
+- NO markdown, NO bullet points, NO numbering
+- NO commentary before or after the text
+- Each paragraph covers exactly one person, event, or fact
+- Every sentence must be complete and self contained
+- Keep all names, dates, numbers, and titles exactly as written
+- If you add anything other than the reformatted text, you have failed
+
+Text to format: (UNTIL THIS LINE IS THE PROMPT NOT THE DOCUMENT CONTENT) <END_OF_PROMPT>
+
+"""
 
     if MODE == "local":
         from respond import load_model
@@ -142,7 +167,9 @@ You are a document formatter. Follow the rules exactly.</s>
             stop=["</s>", "<|user|>", "<|system|>"],
             echo=False
         )
-        return output['choices'][0]['text'].strip()
+        result = output['choices'][0]['text'].strip()
+        result = clean_formatter_output(result, format_prompt)
+        return result
 
     elif MODE == "cloud":
         from openai import OpenAI
@@ -153,12 +180,13 @@ You are a document formatter. Follow the rules exactly.</s>
             temperature=0.1,
             max_tokens=1024,
             messages=[
-                {"role": "system", "content":
-                    "You are a document formatter. Follow the rules exactly."},
-                {"role": "user", "content": format_prompt}
+                {"role": "system", "content": format_prompt},
+                {"role": "user", "content": text}
             ]
         )
-        return response.choices[0].message.content.strip()
+        result = response.choices[0].message.content.strip()
+        result = clean_formatter_output(result, format_prompt)
+        return result
 
     elif MODE == "anthropic":
         import anthropic
@@ -167,10 +195,12 @@ You are a document formatter. Follow the rules exactly.</s>
         message = client.messages.create(
             model=MODEL_NAME,
             max_tokens=1024,
-            system="You are a document formatter. Follow the rules exactly.",
-            messages=[{"role": "user", "content": format_prompt}]
+            system=format_prompt,
+            messages=[{"role": "user", "content": text}]
         )
-        return message.content[0].text.strip()
+        result = message.content[0].text.strip()
+        result = clean_formatter_output(result, format_prompt)
+        return result
 
     return text
 

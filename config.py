@@ -27,15 +27,15 @@ N_GPU_LAYERS = 0
 
 # --- CLOUD / ANTHROPIC ---
 # for MODE = "cloud" or "anthropic"
-API_KEY = os.getenv("GROQ_API_KEY")
-MODEL_NAME = "llama-3.1-8b-instant"
+API_KEY = "none"
+MODEL_NAME = "tinyllama"
 
 # only needed for MODE = "cloud"
 # openai:  https://api.openai.com/v1
 # groq:    https://api.groq.com/openai/v1
 # gemini:  https://generativelanguage.googleapis.com/v1beta/openai/
 # ollama:  http://localhost:11434/v1
-API_BASE_URL = "https://api.groq.com/openai/v1"
+API_BASE_URL = "http://localhost:8080/v1"
 
 # --- GENERATION SETTINGS ---
 TEMPERATURE = 0.1
@@ -65,7 +65,7 @@ IDX_FILE = "data/knowledge.idx"
 DOCS_FOLDER = "data/docs"
 
 # --- FORMATTER SETTINGS ---
-USE_LLM_FORMATTER = True  # set False to skip LLM formatting at ingestion
+USE_LLM_FORMATTER = False  # set False to skip LLM formatting at ingestion
 
 # --- VALIDATION ---
 def validate():

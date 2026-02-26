@@ -30,7 +30,7 @@ def query(text):
     chunks = [r['chunk'] for r in results]
 
     print("\n=== RESPONSE ===")
-    answer = respond(text, chunks)
+    answer = respond(text, chunks, results=results)
     print(f"\n{answer}")
     return answer
 
@@ -54,7 +54,7 @@ def interactive():
         if q:
             results = search(q)
             chunks = [r['chunk'] for r in results]
-            answer = respond(q, chunks)
+            answer = respond(q, chunks, results=results)
             print(f"\n{answer}")
 
 if __name__ == "__main__":

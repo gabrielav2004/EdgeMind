@@ -26,12 +26,12 @@ def load_model():
 
 def build_prompt(query, chunks):
     context = ""
-    for i, chunk in enumerate(chunks):
-        context += f"[Source {i+1}]:\n{chunk}\n\n"
+    for chunk in chunks:
+        context += f"{chunk}\n\n"
     return context, query
 
 
-def _respond_local(query, chunks):
+def _respond_local(query, chunks, results=None):
     model = load_model()
     context, q = build_prompt(query, chunks)
 
@@ -44,6 +44,8 @@ RULES:
 - If a source is clearly unrelated to the question, ignore it completely
 - If the answer is not clearly stated in any source, say "not found in knowledge base"
 - Quote names, numbers, and facts exactly as written
+- Answer only for the question asked dont blabber extra stuffs.
+- In your response dont refer to the source as source its your knowledge.
 - Do not explain or elaborate beyond what the source states</s>
 <|user|>
 {context}
@@ -66,7 +68,7 @@ According to the sources, """
     )
     return output['choices'][0]['text'].strip()
 
-def _respond_cloud(query, chunks):
+def _respond_cloud(query, chunks, results=None):
     from openai import OpenAI
     context, q = build_prompt(query, chunks)
 
@@ -80,15 +82,20 @@ def _respond_cloud(query, chunks):
         temperature=TEMPERATURE,
         max_tokens=MAX_TOKENS,
         messages=[
-            {"role": "system", "content":
-                "You are a precise question answering assistant. "
-                "Read ALL sources carefully. Quote facts exactly."},
-            {"role": "user", "content": f"{context}\nQuestion: {q}"}
-        ]
+    {"role": "system", "content":
+        "You are a concise assistant. Answer in one sentence using ONLY the exact information provided. "
+        "Search carefully through all the information for the answer before concluding it is not there. "
+        "Do not infer, elaborate, or add anything not explicitly stated. "
+        "Never mention sources, context, or documents. "
+        "also reason carefully for questions that have an abstract answer like around, more than, greater than, exceeding"
+        "If you genuinely cannot find the answer say 'I don't have information on that.'\n\n"
+        f"{context}"},
+    {"role": "user", "content": q}
+]
     )
     return response.choices[0].message.content.strip()
 
-def _respond_anthropic(query, chunks):
+def _respond_anthropic(query, chunks, results=None):
     import anthropic
     context, q = build_prompt(query, chunks)
 
@@ -106,23 +113,25 @@ def _respond_anthropic(query, chunks):
     )
     return message.content[0].text.strip()
 
-def respond(query, chunks):
+def respond(query, chunks, results=None):
     if not chunks:
-        return "no relevant context found in knowledge base"
+        return "not found in knowledge base"
 
-    print(f"generating response via {MODE}...")
+    # if top chunk scores significantly higher than rest use only top chunk
+    if results and len(results) > 1:
+        top_score = results[0].get('final_score', 0)
+        second_score = results[1].get('final_score', 0)
+        if top_score - second_score > 0.15:
+            chunks = [chunks[0]]
+
+    print(f"generating response via {MODE} using {len(chunks)} chunk(s)...")
 
     if MODE == "local":
-        return _respond_local(query, chunks)
+        return _respond_local(query, chunks, results)
     elif MODE == "cloud":
-        return _respond_cloud(query, chunks)
+        return _respond_cloud(query, chunks, results)
     elif MODE == "anthropic":
-        return _respond_anthropic(query, chunks)
-    else:
-        raise ValueError(
-            f"unknown MODE: {MODE}. "
-            f"choose from: local, cloud, anthropic"
-        )
+        return _respond_anthropic(query, chunks, results)
 
 if __name__ == "__main__":
     test_chunks = [
