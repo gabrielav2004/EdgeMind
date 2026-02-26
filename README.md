@@ -130,10 +130,7 @@ USE_LLM_FORMATTER = False  # see considerations below before enabling
 | Anthropic | use MODE = "anthropic" | separate SDK |
 
 ## Special Case Usage of OpenAI Compatible API in Cloud Mode
-
-Add this section to the README under the **Deployment Architecture** section:
-
-## llama.cpp Server Mode
+### llama.cpp Server Mode
 
 Instead of running inference through Python bindings, llama.cpp can run as a standalone HTTP server. This is faster, keeps the model permanently warm, and exposes an OpenAI-compatible endpoint — no code changes needed in EdgeMind.
 
