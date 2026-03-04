@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="edgemind.png" alt="EdgeMind Banner" width="600">
+<img src="edgemind.png" alt="EdgeMind Banner" width="200">
 
 # EdgeMind
 
