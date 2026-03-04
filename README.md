@@ -1,6 +1,6 @@
 <div align="center">
 
-![EdgeMind Banner](edgemind.png)
+<img src="edgemind.png" alt="EdgeMind Banner" width="600">
 
 # EdgeMind
 
