@@ -2,8 +2,8 @@ import numpy as np
 import struct
 import time
 import re
-from config import DB_FILE, IDX_FILE, TOP_K, RERANK_CANDIDATES
-from models_cache import get_embedding_model
+from edgemind.core.config import DB_FILE, IDX_FILE, TOP_K, RERANK_CANDIDATES
+from edgemind.core.models_cache import get_embedding_model
 
 VECTOR_BYTES = 48
 
@@ -15,7 +15,7 @@ STOPWORDS = {
 }
 
 def get_embedding(text):
-    from config import EMBEDDING_MODEL
+    from edgemind.core.config import EMBEDDING_MODEL
     if "bge" in EMBEDDING_MODEL.lower():
         text = f"Represent this sentence for searching relevant passages: {text}"
     return get_embedding_model().encode([text], normalize_embeddings=True)[0]

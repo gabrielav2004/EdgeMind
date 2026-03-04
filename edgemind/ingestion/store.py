@@ -1,8 +1,8 @@
 import numpy as np
 import struct
 import os
-from config import DB_FILE, IDX_FILE
-from models_cache import get_embedding_model
+from edgemind.core.config import DB_FILE, IDX_FILE
+from edgemind.core.models_cache import get_embedding_model
 
 def get_embeddings(texts):
     return get_embedding_model().encode(texts, normalize_embeddings=True)

@@ -1,14 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from config import HOST, PORT, DOCS_FOLDER
+from edgemind.core.config import HOST, PORT, DOCS_FOLDER
 import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("loading models...")
-    from models_cache import get_embedding_model
-    from respond import load_model
+    from edgemind.core.models_cache import get_embedding_model
+    from edgemind.generation.respond import load_model
     get_embedding_model()
     load_model()
     print("edgemind ready")
@@ -42,8 +42,8 @@ def health():
 
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
-    from search import search
-    from respond import respond
+    from edgemind.retrieval.search import search
+    from edgemind.generation.respond import respond
 
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="query text cannot be empty")
@@ -75,8 +75,8 @@ def query(request: QueryRequest):
 
 @app.post("/ingest")
 def ingest(folder: str = DOCS_FOLDER):
-    from parse import parse_folder
-    from store import init_db, store_chunks, count_chunks
+    from edgemind.ingestion.parse import parse_folder
+    from edgemind.ingestion.store import init_db, store_chunks, count_chunks
 
     if not os.path.exists(folder):
         raise HTTPException(status_code=404, detail=f"folder not found: {folder}")

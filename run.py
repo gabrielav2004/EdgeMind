@@ -1,11 +1,11 @@
 import sys
 import os
-from config import DOCS_FOLDER
+from edgemind.core.config import DOCS_FOLDER
 
 def ingest(path):
-    from parse import parse_file, parse_folder
-    from store import init_db, store_chunks, count_chunks
-    from config import USE_LLM_FORMATTER
+    from edgemind.ingestion.parse import parse_file, parse_folder
+    from edgemind.ingestion.store import init_db, store_chunks, count_chunks
+    from edgemind.core.config import USE_LLM_FORMATTER
 
     print("=== INGESTION ===")
     init_db(overwrite=True)
@@ -22,8 +22,8 @@ def ingest(path):
         print("no chunks found")
 
 def query(text):
-    from search import search
-    from respond import respond
+    from edgemind.retrieval.search import search
+    from edgemind.generation.respond import respond
 
     print("=== QUERY ===")
     results = search(text)
@@ -35,9 +35,9 @@ def query(text):
     return answer
 
 def interactive():
-    from search import search
-    from respond import load_model, respond
-    from models_cache import get_embedding_model
+    from edgemind.retrieval.search import search
+    from edgemind.generation.respond import load_model, respond
+    from edgemind.core.models_cache import get_embedding_model
 
     print("=== EdgeMind ===")
     print("local semantic knowledge system")

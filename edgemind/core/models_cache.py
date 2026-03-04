@@ -1,4 +1,4 @@
-from config import EMBEDDING_MODEL
+from edgemind.core.config import EMBEDDING_MODEL
 
 _embedding_model = None
 
