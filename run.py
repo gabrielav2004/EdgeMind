@@ -57,12 +57,17 @@ def interactive():
             answer = respond(q, chunks, results=results)
             print(f"\n{answer}")
 
-if __name__ == "__main__":
+def download_model():
+    from edgemind.core.models_cache import download_embedding_model
+    download_embedding_model()
+
+def main():
     if len(sys.argv) < 2:
         print("usage:")
-        print("  python run.py ingest <file_or_folder>")
-        print("  python run.py query <text>")
-        print("  python run.py interactive")
+        print("  edgemind ingest <file_or_folder>")
+        print("  edgemind query <text>")
+        print("  edgemind interactive")
+        print("  edgemind download-model")
         sys.exit(1)
 
     command = sys.argv[1]
@@ -76,5 +81,10 @@ if __name__ == "__main__":
         query(text)
     elif command == "interactive":
         interactive()
+    elif command == "download-model":
+        download_model()
     else:
         print(f"unknown command: {command}")
+
+if __name__ == "__main__":
+    main()

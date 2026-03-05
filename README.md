@@ -134,13 +134,13 @@ MODEL_NAME = "claude-haiku-4-5-20251001"
 
 ```bash
 # ingest documents
-edgemind ingest data/docs
+edgemind ingest data/docs (or) python run.py ingest data/docs
 
 # single query
-edgemind query "how many registrations were made"
+edgemind query "how many registrations were made" (or) python run.py query "how many registrations were made"
 
 # interactive mode
-edgemind interactive
+edgemind interactive (or) python run.py interactive
 
 # start API server
 python serve.py
