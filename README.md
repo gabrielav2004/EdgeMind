@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="edgemind.png" alt="EdgeMind Banner" width="200">
+<img src="edgemind.png" alt="EdgeMind Logo" width="120">
 
 # EdgeMind
 
@@ -64,6 +64,7 @@ The result is a knowledge base that fits in two files, loads instantly, and runs
 - **Binary embeddings** — 32x storage reduction vs float32, mean threshold quantization
 - **Three-stage retrieval** — hamming search → dot product rerank → keyword + name boost
 - **Portable knowledge base** — ingest on powerful hardware, copy two files to any device
+- **Offline embedding model** — download once, runs fully offline on edge devices
 - **Multi-provider LLM** — local (TinyLlama, Qwen2), cloud (Groq, OpenAI, Gemini, Ollama), or Anthropic
 - **Smart chunking** — splits at sentence boundaries, never mid-sentence
 - **FastAPI service** — REST API for network access from mobile and other devices
@@ -117,6 +118,12 @@ API_KEY = "your-key"
 MODEL_NAME = "claude-haiku-4-5-20251001"
 ```
 
+**HuggingFace Token (optional — faster model downloads):**
+```bash
+# add to .env file
+HF_TOKEN=hf_your_token_here
+```
+
 ### Compatible Providers
 
 | Provider | API_BASE_URL | Notes |
@@ -134,17 +141,22 @@ MODEL_NAME = "claude-haiku-4-5-20251001"
 
 ```bash
 # ingest documents
-edgemind ingest data/docs (or) python run.py ingest data/docs
+edgemind ingest data/docs
 
 # single query
-edgemind query "how many registrations were made" (or) python run.py query "how many registrations were made"
+edgemind query "how many registrations were made"
 
 # interactive mode
-edgemind interactive (or) python run.py interactive
+edgemind interactive
+
+# download embedding model for offline use
+edgemind download-model
 
 # start API server
 python serve.py
 ```
+
+All commands also work via `python run.py <command>`.
 
 ---
 
@@ -154,7 +166,7 @@ python serve.py
 # health check
 curl http://localhost:8000/health
 
-# query
+# query with response
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
   -d '{"text": "who is Mr. Karthik"}'
@@ -190,6 +202,20 @@ Edge device (Raspberry Pi, Jetson, tablet)
 ```
 
 The binary files have zero dependency on the machine, OS, or Python version that created them. The only constraint — the embedding model must match on both machines.
+
+### Offline Embedding Model
+
+Download the embedding model once on a powerful machine, then copy it to your edge device for fully offline operation:
+
+```bash
+# on powerful machine
+edgemind download-model
+# saves to models/embeddings/
+
+# copy to edge device along with knowledge.bin and knowledge.idx
+# on edge device — no internet needed
+edgemind interactive
+```
 
 ---
 
@@ -282,7 +308,7 @@ USE_LLM_FORMATTER = False  # default, safe for all setups
 | Hamming search (1k chunks) | < 5ms |
 | Dot product rerank (20 candidates) | ~20ms |
 | Total retrieval latency | ~50ms |
-| Embedding model (BGE small) | 33MB |
+| Embedding model (BGE small) | 133MB download, loads in ~2s |
 
 ---
 
@@ -291,21 +317,24 @@ USE_LLM_FORMATTER = False  # default, safe for all setups
 ```
 EdgeMind/
   edgemind/
+    cli.py           # CLI entry point
     core/
-      config.py        # all settings
-      models_cache.py  # singleton embedding model
+      config.py      # all settings
+      models_cache.py # singleton embedding model + offline support
     ingestion/
-      parse.py         # document parsing + chunking
-      store.py         # binary database writer
+      parse.py       # document parsing + chunking
+      store.py       # binary database writer
     retrieval/
-      search.py        # three-stage retrieval
+      search.py      # three-stage retrieval
     generation/
-      respond.py       # multi-provider response
-  run.py               # CLI entry point
-  serve.py             # FastAPI service
-  pyproject.toml       # package config
+      respond.py     # multi-provider response
+  run.py             # convenience wrapper
+  serve.py           # FastAPI service
+  pyproject.toml     # package config
+  benchmark.py       # retrieval accuracy benchmarks
   data/
   models/
+    embeddings/      # cached embedding model for offline use
 ```
 
 ---
@@ -318,6 +347,8 @@ EdgeMind/
 - [x] Gap filter to prevent chunk blending in responses
 - [x] Smart chunking at sentence boundaries
 - [x] BGE retrieval-optimized embedding model
+- [x] Offline embedding model support
+- [x] HuggingFace token support
 - [x] Multi-provider response generation
 - [x] FastAPI service
 - [x] Refactored into proper Python package
@@ -325,6 +356,7 @@ EdgeMind/
 - [ ] llama.cpp native embeddings — eliminate HuggingFace dependency
 - [ ] Embedding provider support (ollama, openai, cohere)
 - [ ] C implementation of hamming search
+- [ ] Benchmark results vs FAISS and ChromaDB
 - [ ] Single binary deployment
 - [ ] Raspberry Pi 4 validated deployment
 
