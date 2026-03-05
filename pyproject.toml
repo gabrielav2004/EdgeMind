@@ -37,7 +37,7 @@ local = ["llama-cpp-python"]
 server = ["llama-cpp-python[server]"]
 
 [project.scripts]
-edgemind = "run:main"
+edgemind = "edgemind.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/gabrielav2004/EdgeMind"
