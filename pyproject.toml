@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "edgemind"
+version = "0.1.0"
+description = "Lightweight semantic retrieval for edge devices and robotics"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Gabriel", email = "your@email.com" }
+]
+keywords = ["rag", "edge-ai", "semantic-search", "robotics", "embeddings"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "sentence-transformers",
+    "numpy",
+    "scikit-learn",
+    "fastapi",
+    "uvicorn",
+    "openai",
+    "anthropic",
+    "huggingface_hub",
+    "pypdf",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+local = ["llama-cpp-python"]
+server = ["llama-cpp-python[server]"]
+
+[project.scripts]
+edgemind = "run:main"
+
+[project.urls]
+Homepage = "https://github.com/gabrielav2004/EdgeMind"
+Repository = "https://github.com/gabrielav2004/EdgeMind"
+Issues = "https://github.com/gabrielav2004/EdgeMind/issues"

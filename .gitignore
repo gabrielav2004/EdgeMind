@@ -76,3 +76,7 @@ knowledge.bin
 knowledge.idx
 data/knowledge.bin
 data/knowledge.idx
+
+.env
+.env.*
+

@@ -1,15 +1,11 @@
 import numpy as np
 import struct
 import os
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-DB_FILE = "data/knowledge.bin"
-IDX_FILE = "data/knowledge.idx"
+from edgemind.core.config import DB_FILE, IDX_FILE
+from edgemind.core.models_cache import get_embedding_model
 
 def get_embeddings(texts):
-    return model.encode(texts, normalize_embeddings=True)
+    return get_embedding_model().encode(texts, normalize_embeddings=True)
 
 def quantize_to_binary(embeddings):
     binary = (embeddings > 0).astype(np.uint8)
@@ -97,24 +93,18 @@ def verify_db():
     print("\n--- verifying database ---")
     vectors, chunks = load_all()
     print(f"total chunks stored: {len(chunks)}")
-
     for i, (vec, chunk) in enumerate(zip(vectors, chunks)):
         print(f"\nchunk {i+1}:")
         print(f"  text:         '{chunk[:50]}'")
         print(f"  vector shape: {vec.shape}")
-        print(f"  vector sample:{vec[:8]}")
 
 if __name__ == "__main__":
     init_db(overwrite=True)
-
     chunks = [
         "the robot motor requires high torque to operate",
         "motor needs strong rotational force for movement",
-        "the weather today is sunny and warm outside",
         "robot arm joint needs calibration every 6 months",
-        "it is a beautiful day outside in the park"
     ]
-
     store_chunks(chunks)
     verify_db()
     print(f"\ntotal chunks in db: {count_chunks()}")
