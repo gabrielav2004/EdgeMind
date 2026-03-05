@@ -1,4 +1,4 @@
-from config import (
+from edgemind.core.config import (
     MODE, TEMPERATURE, MAX_TOKENS,
     MODEL_PATH, N_THREADS, N_CTX, N_GPU_LAYERS,
     API_KEY, API_BASE_URL, MODEL_NAME

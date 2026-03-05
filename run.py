@@ -1,11 +1,11 @@
 import sys
 import os
-from config import DOCS_FOLDER
+from edgemind.core.config import DOCS_FOLDER
 
 def ingest(path):
-    from parse import parse_file, parse_folder
-    from store import init_db, store_chunks, count_chunks
-    from config import USE_LLM_FORMATTER
+    from edgemind.ingestion.parse import parse_file, parse_folder
+    from edgemind.ingestion.store import init_db, store_chunks, count_chunks
+    from edgemind.core.config import USE_LLM_FORMATTER
 
     print("=== INGESTION ===")
     init_db(overwrite=True)
@@ -22,8 +22,8 @@ def ingest(path):
         print("no chunks found")
 
 def query(text):
-    from search import search
-    from respond import respond
+    from edgemind.retrieval.search import search
+    from edgemind.generation.respond import respond
 
     print("=== QUERY ===")
     results = search(text)
@@ -35,9 +35,9 @@ def query(text):
     return answer
 
 def interactive():
-    from search import search
-    from respond import load_model, respond
-    from models_cache import get_embedding_model
+    from edgemind.retrieval.search import search
+    from edgemind.generation.respond import load_model, respond
+    from edgemind.core.models_cache import get_embedding_model
 
     print("=== EdgeMind ===")
     print("local semantic knowledge system")
@@ -57,12 +57,17 @@ def interactive():
             answer = respond(q, chunks, results=results)
             print(f"\n{answer}")
 
-if __name__ == "__main__":
+def download_model():
+    from edgemind.core.models_cache import download_embedding_model
+    download_embedding_model()
+
+def main():
     if len(sys.argv) < 2:
         print("usage:")
-        print("  python run.py ingest <file_or_folder>")
-        print("  python run.py query <text>")
-        print("  python run.py interactive")
+        print("  edgemind ingest <file_or_folder>")
+        print("  edgemind query <text>")
+        print("  edgemind interactive")
+        print("  edgemind download-model")
         sys.exit(1)
 
     command = sys.argv[1]
@@ -76,5 +81,10 @@ if __name__ == "__main__":
         query(text)
     elif command == "interactive":
         interactive()
+    elif command == "download-model":
+        download_model()
     else:
         print(f"unknown command: {command}")
+
+if __name__ == "__main__":
+    main()

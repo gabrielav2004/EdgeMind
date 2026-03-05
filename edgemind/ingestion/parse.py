@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from config import CHUNK_SIZE, CHUNK_OVERLAP
+from edgemind.core.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 try:
     import pypdf
@@ -126,7 +126,7 @@ def format_section(text):
     """
     Reformat a section using configured provider (local or cloud).
     """
-    from config import MODE
+    from edgemind.core.config import MODE
 
     format_prompt = """ <START_OF_PROMPT>
     You are a document formatter. Your output must contain ONLY the reformatted text, nothing else.
@@ -147,8 +147,8 @@ Text to format: (UNTIL THIS LINE IS THE PROMPT NOT THE DOCUMENT CONTENT) <END_OF
 """
 
     if MODE == "local":
-        from respond import load_model
-        from config import MAX_TOKENS
+        from edgemind.generation.respond import load_model
+        from edgemind.core.config import MAX_TOKENS
         model = load_model()
         if model is None:
             return text
@@ -173,7 +173,7 @@ You are a document formatter. Follow the rules exactly.</s>
 
     elif MODE == "cloud":
         from openai import OpenAI
-        from config import API_KEY, API_BASE_URL, MODEL_NAME
+        from edgemind.core.config import API_KEY, API_BASE_URL, MODEL_NAME
         client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
         response = client.chat.completions.create(
             model=MODEL_NAME,
@@ -190,7 +190,7 @@ You are a document formatter. Follow the rules exactly.</s>
 
     elif MODE == "anthropic":
         import anthropic
-        from config import API_KEY, MODEL_NAME
+        from edgemind.core.config import API_KEY, MODEL_NAME
         client = anthropic.Anthropic(api_key=API_KEY)
         message = client.messages.create(
             model=MODEL_NAME,
