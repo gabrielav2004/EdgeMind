@@ -21,7 +21,7 @@
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
-pip install -e .
+bash install.sh
 ```
 
 Add your documents to `data/docs/`, then:
@@ -59,6 +59,25 @@ The result is a knowledge base that fits in two files, loads instantly, and runs
 
 ---
 
+## Benchmark
+
+Tested on AWS t2.micro — 1 vCPU, 1GB RAM (constrained edge proxy).
+
+| Method | Top-1 Accuracy | Avg Latency |
+|--------|---------------|-------------|
+| Float cosine (baseline) | 5/5 (100%) | 0.480ms |
+| Sign binary | 5/5 (100%) | 0.321ms |
+| Mean binary (EdgeMind) | 5/5 (100%) | 0.038ms |
+
+| Format | Bytes per embedding | Compression |
+|--------|-------------------|-------------|
+| Float32 | 1536 bytes | 1x |
+| Binary (EdgeMind) | 48 bytes | **32x** |
+
+Mean threshold binary matches float cosine accuracy at **32x compression** and **12x faster retrieval**. Full details in [BENCHMARK.md](BENCHMARK.md).
+
+---
+
 ## Features
 
 - **Binary embeddings** — 32x storage reduction vs float32, mean threshold quantization
@@ -74,20 +93,29 @@ The result is a knowledge base that fits in two files, loads instantly, and runs
 
 ## Installation
 
-**From source:**
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
+bash install.sh
+```
+
+`install.sh` installs CPU-only torch first to avoid pulling CUDA dependencies (~2GB) on edge hardware.
+
+**Manual install:**
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e .
 ```
 
 **With local model support:**
 ```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[local]"
 ```
 
 **With llama.cpp server:**
 ```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[server]"
 ```
 
@@ -205,10 +233,10 @@ The binary files have zero dependency on the machine, OS, or Python version that
 
 ### Offline Embedding Model
 
-Download the embedding model once on a powerful machine, then copy it to your edge device for fully offline operation:
+Download the embedding model once on a powerful machine, then copy it to your edge device:
 
 ```bash
-# on powerful machine
+# on powerful machine — run once
 edgemind download-model
 # saves to models/embeddings/
 
@@ -220,6 +248,17 @@ edgemind interactive
 ---
 
 ## Deployment
+
+### Low RAM Devices (1GB)
+
+Add swap before running on memory-constrained hardware:
+
+```bash
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
 
 ### llama.cpp Server Mode
 
@@ -307,8 +346,8 @@ USE_LLM_FORMATTER = False  # default, safe for all setups
 | Storage per chunk | ~50 bytes + text |
 | Hamming search (1k chunks) | < 5ms |
 | Dot product rerank (20 candidates) | ~20ms |
-| Total retrieval latency | ~50ms |
-| Embedding model (BGE small) | 133MB download, loads in ~2s |
+| Mean binary retrieval latency | 0.038ms |
+| Embedding model load (cached) | < 1s |
 
 ---
 
@@ -317,24 +356,25 @@ USE_LLM_FORMATTER = False  # default, safe for all setups
 ```
 EdgeMind/
   edgemind/
-    cli.py           # CLI entry point
+    cli.py             # CLI entry point
     core/
-      config.py      # all settings
-      models_cache.py # singleton embedding model + offline support
+      config.py        # all settings
+      models_cache.py  # singleton embedding model + offline support
     ingestion/
-      parse.py       # document parsing + chunking
-      store.py       # binary database writer
+      parse.py         # document parsing + chunking
+      store.py         # binary database writer
     retrieval/
-      search.py      # three-stage retrieval
+      search.py        # three-stage retrieval
     generation/
-      respond.py     # multi-provider response
-  run.py             # convenience wrapper
-  serve.py           # FastAPI service
-  pyproject.toml     # package config
-  benchmark.py       # retrieval accuracy benchmarks
+      respond.py       # multi-provider response
+  run.py               # convenience wrapper
+  serve.py             # FastAPI service
+  benchmark.py         # retrieval accuracy benchmarks
+  install.sh           # edge-friendly installer
+  pyproject.toml       # package config
   data/
   models/
-    embeddings/      # cached embedding model for offline use
+    embeddings/        # cached embedding model for offline use
 ```
 
 ---
@@ -353,12 +393,13 @@ EdgeMind/
 - [x] FastAPI service
 - [x] Refactored into proper Python package
 - [x] pip installable via pyproject.toml
+- [x] Edge-friendly installer (CPU-only torch)
+- [x] Benchmarked on constrained hardware (AWS t2.micro)
 - [ ] llama.cpp native embeddings — eliminate HuggingFace dependency
 - [ ] Embedding provider support (ollama, openai, cohere)
 - [ ] C implementation of hamming search
-- [ ] Benchmark results vs FAISS and ChromaDB
-- [ ] Single binary deployment
 - [ ] Raspberry Pi 4 validated deployment
+- [ ] PyPI release
 
 ---
 
@@ -369,7 +410,7 @@ Contributions welcome. Open an issue first for major changes.
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
-pip install -e .
+bash install.sh
 ```
 
 ---
