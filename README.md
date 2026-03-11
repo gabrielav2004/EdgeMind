@@ -21,7 +21,14 @@
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
-bash install.sh
+```
+
+```bash
+# linux / mac
+./install.sh
+
+# windows
+install.bat
 ```
 
 Add your documents to `data/docs/`, then:
@@ -96,10 +103,15 @@ Mean threshold binary matches float cosine accuracy at **32x compression** and *
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
-bash install.sh
 ```
 
-`install.sh` installs CPU-only torch first to avoid pulling CUDA dependencies (~2GB) on edge hardware.
+| Platform | Command |
+|----------|---------|
+| Linux / Raspberry Pi / EC2 | `./install.sh` |
+| Mac | `./install.sh` |
+| Windows | `install.bat` |
+
+The installers handle CPU-only torch to avoid pulling CUDA dependencies (~2GB) on edge hardware.
 
 **Manual install:**
 ```bash
@@ -370,7 +382,8 @@ EdgeMind/
   run.py               # convenience wrapper
   serve.py             # FastAPI service
   benchmark.py         # retrieval accuracy benchmarks
-  install.sh           # edge-friendly installer
+  install.sh           # linux / mac installer
+  install.bat          # windows installer
   pyproject.toml       # package config
   data/
   models/
@@ -393,7 +406,7 @@ EdgeMind/
 - [x] FastAPI service
 - [x] Refactored into proper Python package
 - [x] pip installable via pyproject.toml
-- [x] Edge-friendly installer (CPU-only torch)
+- [x] Cross-platform installers (Linux, Mac, Windows)
 - [x] Benchmarked on constrained hardware (AWS t2.micro)
 - [ ] llama.cpp native embeddings — eliminate HuggingFace dependency
 - [ ] Embedding provider support (ollama, openai, cohere)
@@ -410,7 +423,8 @@ Contributions welcome. Open an issue first for major changes.
 ```bash
 git clone https://github.com/gabrielav2004/EdgeMind
 cd EdgeMind
-bash install.sh
+./install.sh  # linux / mac
+install.bat   # windows
 ```
 
 ---
