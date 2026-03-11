@@ -7,7 +7,7 @@ name = "edgemind"
 version = "0.1.0"
 description = "Lightweight semantic retrieval for edge devices and robotics"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.9"
 authors = [
     { name = "Gabriel", email = "your@email.com" }
@@ -15,7 +15,6 @@ authors = [
 keywords = ["rag", "edge-ai", "semantic-search", "robotics", "embeddings"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -43,3 +42,6 @@ edgemind = "edgemind.cli:main"
 Homepage = "https://github.com/gabrielav2004/EdgeMind"
 Repository = "https://github.com/gabrielav2004/EdgeMind"
 Issues = "https://github.com/gabrielav2004/EdgeMind/issues"
+
+[tool.setuptools.packages.find]
+include = ["edgemind*"]
