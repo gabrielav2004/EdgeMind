@@ -52,17 +52,64 @@ EdgeMind is built for that. Semantic search that runs on constrained hardware �
 
 ---
 
-## How It Works
+## Architecture
 
+EdgeMind is built around three stages — ingestion, retrieval, and generation.
+
+```mermaid
+flowchart TD
+    subgraph INGEST["📥 Ingestion"]
+        D[Documents\n.txt .pdf .json]
+        C[Chunker\nsentence boundaries]
+        E[BGE Embeddings\n384-dim float32]
+        Q[Mean Threshold\nQuantization]
+        DB[(knowledge.bin\nknowledge.idx\n48 bytes/chunk)]
+        D --> C --> E --> Q --> DB
+    end
+
+    subgraph RETRIEVE["🔍 Retrieval"]
+        Q2[Query\nnatural language]
+        E2[BGE Encode\nwith query prefix]
+        QB[Binary Quantize\nmean threshold]
+        H[Hamming Search\nXOR + popcount\ntop 20 candidates]
+        R[Float Dot Product\nRerank\ntop 3]
+        K[Keyword +\nName Boost]
+        Q2 --> E2 --> QB --> H --> R --> K
+    end
+
+    subgraph GENERATE["💬 Generation"]
+        G[Gap Filter\nprevent chunk blending]
+        LLM[LLM\nlocal / cloud / anthropic]
+        A[Answer]
+        K --> G --> LLM --> A
+    end
+
+    DB --> H
+
+    subgraph PROVIDERS["🔌 LLM Providers"]
+        P1[llama.cpp\nlocal]
+        P2[Groq / OpenAI\nGemini / Ollama]
+        P3[Anthropic]
+    end
+
+    LLM --> P1
+    LLM --> P2
+    LLM --> P3
+
+    style INGEST fill:#0d1117,stroke:#58a6ff,color:#ffffff
+    style RETRIEVE fill:#0d1117,stroke:#58a6ff,color:#ffffff
+    style GENERATE fill:#0d1117,stroke:#58a6ff,color:#ffffff
+    style PROVIDERS fill:#0d1117,stroke:#30363d,color:#ffffff
+    style DB fill:#1f6feb,stroke:#58a6ff,color:#ffffff
 ```
-Documents → chunk → embed → binary quantize → flat binary file
-                                                      ↓
-Query → embed → hamming search → dot product rerank → keyword boost → LLM → answer
-```
 
-**The core insight:** A 384-dimensional float32 embedding is 1536 bytes. EdgeMind quantizes each dimension to a single bit using mean threshold — the same embedding becomes 48 bytes. **32x smaller.** Retrieval runs on hamming distance — pure bit operations, no floating point math needed.
+**Ingestion** — documents are split at sentence boundaries, encoded into 384-dimensional vectors using BGE embeddings, then compressed to 48-byte binary vectors using mean threshold quantization. The result is stored in two flat binary files.
 
-The result is a knowledge base that fits in two files, loads instantly, and runs on any hardware.
+**Retrieval** — queries go through the same encoding and quantization pipeline. Search runs in three stages: hamming distance narrows the full database to 20 candidates using pure bit operations, float dot product reranks those candidates with full precision, and a keyword and name boost corrects for semantic blind spots.
+
+**Generation** — a gap filter checks if the top result scores significantly higher than the rest. If so, only that chunk is sent to the LLM to prevent answer blending. The LLM then generates a grounded, single-sentence answer.
+
+**The core insight:** A 384-dimensional float32 embedding is 1536 bytes. After mean threshold quantization the same embedding becomes 48 bytes — **32x smaller**. Search runs on hamming distance — XOR two bit strings and count the differences — which is far cheaper than floating point math and fits the entire database in CPU cache.
 
 ---
 
@@ -135,7 +182,21 @@ pip install -e ".[server]"
 
 ## Configuration
 
-Edit `edgemind/core/config.py` — this is the only file you need to touch.
+EdgeMind supports two ways to configure — a `.env` file for secrets and `edgemind/core/config.py` for everything else.
+
+### .env file
+
+Create a `.env` file at the project root for your API keys and tokens. EdgeMind loads this automatically on startup:
+
+```bash
+# .env
+API_KEY=your-api-key-here
+HF_TOKEN=hf_your_token_here     # optional — faster model downloads
+```
+
+### config.py
+
+Edit `edgemind/core/config.py` for mode, model, and retrieval settings.
 
 **Local mode:**
 ```python
@@ -146,23 +207,19 @@ MODEL_PATH = "models/tinyllama.gguf"
 **Cloud mode:**
 ```python
 MODE = "cloud"
-API_KEY = "your-key"
 API_BASE_URL = "https://api.groq.com/openai/v1"
 MODEL_NAME = "llama3-8b-8192"
+# API_KEY is loaded from .env
 ```
 
 **Anthropic:**
 ```python
 MODE = "anthropic"
-API_KEY = "your-key"
 MODEL_NAME = "claude-haiku-4-5-20251001"
+# API_KEY is loaded from .env
 ```
 
-**HuggingFace Token (optional — faster model downloads):**
-```bash
-# add to .env file
-HF_TOKEN=hf_your_token_here
-```
+> Never hardcode API keys in `config.py`. Use `.env` instead. The `.env` file is gitignored by default.
 
 ### Compatible Providers
 
@@ -281,11 +338,15 @@ pip install -e ".[server]"
 python -m llama_cpp.server --model models/tinyllama.gguf --port 8080 --n_threads 3
 ```
 
-Point EdgeMind to it:
+Point EdgeMind to it via `.env` and `config.py`:
+```bash
+# .env
+API_KEY=none
+```
 ```python
+# config.py
 MODE = "cloud"
 API_BASE_URL = "http://localhost:8080/v1"
-API_KEY = "none"
 MODEL_NAME = "tinyllama"
 ```
 
@@ -385,6 +446,7 @@ EdgeMind/
   install.sh           # linux / mac installer
   install.bat          # windows installer
   pyproject.toml       # package config
+  .env                 # API keys and tokens (gitignored)
   data/
   models/
     embeddings/        # cached embedding model for offline use
@@ -402,6 +464,7 @@ EdgeMind/
 - [x] BGE retrieval-optimized embedding model
 - [x] Offline embedding model support
 - [x] HuggingFace token support
+- [x] dotenv support for API keys and secrets
 - [x] Multi-provider response generation
 - [x] FastAPI service
 - [x] Refactored into proper Python package
