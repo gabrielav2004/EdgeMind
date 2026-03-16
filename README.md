@@ -68,7 +68,7 @@ flowchart TD
     end
 
     subgraph RETRIEVE["Retrieval"]
-        Q2["Query<br>Natural language"]
+        Q2["User Query<br>(Natural language)"]
         E2["BGE Encode<br>with query prefix"]
         QB["Binary Quantize<br>Mean threshold"]
         H["Hamming Search<br>XOR + popcount  |  top 20"]
