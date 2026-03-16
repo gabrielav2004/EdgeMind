@@ -58,38 +58,38 @@ EdgeMind is built around three stages — ingestion, retrieval, and generation.
 
 ```mermaid
 flowchart TD
-    subgraph INGEST["📥 Ingestion"]
-        D[Documents\n.txt .pdf .json]
-        C[Chunker\nsentence boundaries]
-        E[BGE Embeddings\n384-dim float32]
-        Q[Mean Threshold\nQuantization]
-        DB[(knowledge.bin\nknowledge.idx\n48 bytes/chunk)]
+    subgraph INGEST["Ingestion"]
+        D["Documents<br>.txt  .pdf  .json"]
+        C["Chunker<br>Sentence boundaries"]
+        E["BGE Embeddings<br>384-dim float32"]
+        Q["Mean Threshold Quantization<br>1536 bytes → 48 bytes"]
+        DB[("knowledge.bin<br>knowledge.idx<br>48 bytes / chunk")]
         D --> C --> E --> Q --> DB
     end
 
-    subgraph RETRIEVE["🔍 Retrieval"]
-        Q2[Query\nnatural language]
-        E2[BGE Encode\nwith query prefix]
-        QB[Binary Quantize\nmean threshold]
-        H[Hamming Search\nXOR + popcount\ntop 20 candidates]
-        R[Float Dot Product\nRerank\ntop 3]
-        K[Keyword +\nName Boost]
+    subgraph RETRIEVE["Retrieval"]
+        Q2["Query<br>Natural language"]
+        E2["BGE Encode<br>with query prefix"]
+        QB["Binary Quantize<br>Mean threshold"]
+        H["Hamming Search<br>XOR + popcount  |  top 20"]
+        R["Float Dot Product Rerank<br>top 3 results"]
+        K["Keyword + Name Boost<br>Corrects blind spots"]
         Q2 --> E2 --> QB --> H --> R --> K
     end
 
-    subgraph GENERATE["💬 Generation"]
-        G[Gap Filter\nprevent chunk blending]
-        LLM[LLM\nlocal / cloud / anthropic]
-        A[Answer]
+    subgraph GENERATE["Generation"]
+        G["Gap Filter<br>Prevents chunk blending"]
+        LLM["LLM"]
+        A["Answer"]
         K --> G --> LLM --> A
     end
 
     DB --> H
 
-    subgraph PROVIDERS["🔌 LLM Providers"]
-        P1[llama.cpp\nlocal]
-        P2[Groq / OpenAI\nGemini / Ollama]
-        P3[Anthropic]
+    subgraph PROVIDERS["LLM Providers"]
+        P1["llama.cpp<br>Local / Offline"]
+        P2["Groq / OpenAI<br>Gemini / Ollama"]
+        P3["Anthropic<br>Claude"]
     end
 
     LLM --> P1
@@ -101,6 +101,8 @@ flowchart TD
     style GENERATE fill:#0d1117,stroke:#58a6ff,color:#ffffff
     style PROVIDERS fill:#0d1117,stroke:#30363d,color:#ffffff
     style DB fill:#1f6feb,stroke:#58a6ff,color:#ffffff
+    style Q fill:#1a2d3d,stroke:#58a6ff,color:#58a6ff
+    style H fill:#1a2d3d,stroke:#58a6ff,color:#58a6ff
 ```
 
 **Ingestion** — documents are split at sentence boundaries, encoded into 384-dimensional vectors using BGE embeddings, then compressed to 48-byte binary vectors using mean threshold quantization. The result is stored in two flat binary files.
